@@ -11,6 +11,7 @@ pub enum Token {
     Number(char),
     Operator(Op),
     Whitespace,
+    Unrecognized(char),
 }
 
 pub fn scan(text: &str) -> Vec<Token> {
@@ -23,7 +24,7 @@ pub fn scan(text: &str) -> Vec<Token> {
                 '*' => Token::Operator(Op::Multiply),
                 '/' => Token::Operator(Op::Divide),
                 ' ' => Token::Whitespace,
-                _ => Token::Whitespace,
+                _ => Token::Unrecognized(ch),
             }
         })
         .collect()
@@ -40,6 +41,18 @@ mod tests {
         assert_eq!(vec![Token::Number('1'),
                         Token::Whitespace,
                         Token::Operator(Op::Add),
+                        Token::Whitespace,
+                        Token::Number('2')],
+                   tokens);
+    }
+
+    #[test]
+    fn it_scans_unrecognized_tokens() {
+        let tokens = scan("1 a 2");
+        assert_eq!(5, tokens.len());
+        assert_eq!(vec![Token::Number('1'),
+                        Token::Whitespace,
+                        Token::Unrecognized('a'),
                         Token::Whitespace,
                         Token::Number('2')],
                    tokens);
