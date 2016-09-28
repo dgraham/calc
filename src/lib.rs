@@ -236,4 +236,52 @@ mod tests {
         assert_eq!(3 as f64, expr.node.value());
         assert_eq!(0, expr.tokens.len());
     }
+
+    #[test]
+    fn it_adds() {
+        let tokens = scan("1 + 2");
+        let expr = expression(&tokens).unwrap();
+        assert_eq!(3 as f64, expr.node.value());
+        assert_eq!(0, expr.tokens.len());
+    }
+
+    #[test]
+    fn it_multiplies() {
+        let tokens = scan("2 * 8");
+        let expr = expression(&tokens).unwrap();
+        assert_eq!(16 as f64, expr.node.value());
+        assert_eq!(0, expr.tokens.len());
+    }
+
+    #[test]
+    fn it_enforces_operation_order() {
+        let tokens = scan("4 + 2 * 8");
+        let expr = expression(&tokens).unwrap();
+        assert_eq!(20 as f64, expr.node.value());
+        assert_eq!(0, expr.tokens.len());
+    }
+
+    #[test]
+    fn it_groups_terms() {
+        let tokens = scan("((((5)+2)*2)-5)/3");
+        let expr = expression(&tokens).unwrap();
+        assert_eq!(3 as f64, expr.node.value());
+        assert_eq!(0, expr.tokens.len());
+    }
+
+    #[test]
+    fn it_negates_values() {
+        let tokens = scan("6 * -3");
+        let expr = expression(&tokens).unwrap();
+        assert_eq!(-18 as f64, expr.node.value());
+        assert_eq!(0, expr.tokens.len());
+    }
+
+    #[test]
+    fn it_negates_groups() {
+        let tokens = scan("-(5 * 2) - 2");
+        let expr = expression(&tokens).unwrap();
+        assert_eq!(-12 as f64, expr.node.value());
+        assert_eq!(0, expr.tokens.len());
+    }
 }
