@@ -158,6 +158,7 @@ pub fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
                         tokens: expr.tokens,
                     })
                 }
+                Token::Unrecognized(_) => Err(ParseError::Grammar("Unrecognized token")),
                 _ => Ok(term),
             }
         }
@@ -191,6 +192,7 @@ fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
                         tokens: term.tokens,
                     })
                 }
+                Token::Unrecognized(_) => Err(ParseError::Grammar("Unrecognized token")),
                 _ => Ok(factor),
             }
         }
@@ -332,6 +334,15 @@ mod tests {
         match expression(&tokens) {
             Ok(_) => panic!("Must enforce factor grammar"),
             Err(e) => assert_eq!("Expected integer, negation, or group", e.description()),
+        }
+    }
+
+    #[test]
+    fn it_enforces_unrecognized_tokens() {
+        let tokens = scan("1 a 2");
+        match expression(&tokens) {
+            Ok(_) => panic!("Must enforce unrecognized tokens"),
+            Err(e) => assert_eq!("Unrecognized token", e.description()),
         }
     }
 }
