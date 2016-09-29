@@ -1,29 +1,36 @@
 use std::error;
+use std::error::Error;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum ParseError<'a> {
-    Grammar(&'a str),
+pub enum ParseError {
+    UnexpectedToken,
+    InvalidToken,
+    InvalidGroup,
+    FactorExpected,
 }
 
-impl<'a> fmt::Display for ParseError<'a> {
+impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ParseError::Grammar(reason) => reason.fmt(f),
+            _ => write!(f, "{}", self.description()),
         }
     }
 }
 
-impl<'a> error::Error for ParseError<'a> {
+impl error::Error for ParseError {
     fn description(&self) -> &str {
         match *self {
-            ParseError::Grammar(reason) => reason,
+            ParseError::UnexpectedToken => "Unconsumed input",
+            ParseError::InvalidToken => "Unrecognized token",
+            ParseError::InvalidGroup => "Expected group close",
+            ParseError::FactorExpected => "Expected integer, negation, or group",
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            ParseError::Grammar(_) => None,
+            _ => None,
         }
     }
 }
@@ -157,7 +164,7 @@ pub fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
                         tokens: expr.tokens,
                     })
                 }
-                Token::Unrecognized(_) => Err(ParseError::Grammar("Unrecognized token")),
+                Token::Unrecognized(_) => Err(ParseError::InvalidToken),
                 _ => Ok(term),
             }
         }
@@ -191,7 +198,7 @@ fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
                         tokens: term.tokens,
                     })
                 }
-                Token::Unrecognized(_) => Err(ParseError::Grammar("Unrecognized token")),
+                Token::Unrecognized(_) => Err(ParseError::InvalidToken),
                 _ => Ok(factor),
             }
         }
@@ -227,23 +234,31 @@ fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
                                         tokens: tokens,
                                     })
                                 }
-                                _ => Err(ParseError::Grammar("Expected group close")),
+                                _ => Err(ParseError::InvalidGroup),
                             }
                         }
-                        None => Err(ParseError::Grammar("Expected group close")),
+                        None => Err(ParseError::InvalidGroup),
                     }
                 }
-                _ => Err(ParseError::Grammar("Expected integer, negation, or group")),
+                _ => Err(ParseError::FactorExpected),
             }
         }
-        None => Err(ParseError::Grammar("Expected factor")),
+        None => Err(ParseError::FactorExpected),
+    }
+}
+
+pub fn eval(text: &str) -> Result<f64, ParseError> {
+    let tokens = scan(text);
+    let expr = try!(expression(&tokens));
+    match expr.tokens.len() {
+        0 => Ok(expr.node.value()),
+        _ => Err(ParseError::UnexpectedToken),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::error::Error;
-    use super::{expression, scan, Token};
+    use super::{eval, expression, scan, ParseError, Token};
 
     #[test]
     fn it_scans() {
@@ -313,8 +328,8 @@ mod tests {
     fn it_enforces_group_close() {
         let tokens = scan("(1");
         match expression(&tokens) {
-            Ok(_) => panic!("Must enforce closing paren"),
-            Err(e) => assert_eq!("Expected group close", e.description()),
+            Err(ParseError::InvalidGroup) => (),
+            _ => panic!("Must enforce closing paren"),
         }
     }
 
@@ -322,8 +337,8 @@ mod tests {
     fn it_enforces_missing_factor() {
         let tokens = scan("(");
         match expression(&tokens) {
-            Ok(_) => panic!("Must enforce factor grammar"),
-            Err(e) => assert_eq!("Expected factor", e.description()),
+            Err(ParseError::FactorExpected) => (),
+            _ => panic!("Must enforce factor grammar"),
         }
     }
 
@@ -331,8 +346,8 @@ mod tests {
     fn it_enforces_factor_operators() {
         let tokens = scan("1 + *");
         match expression(&tokens) {
-            Ok(_) => panic!("Must enforce factor grammar"),
-            Err(e) => assert_eq!("Expected integer, negation, or group", e.description()),
+            Err(ParseError::FactorExpected) => (),
+            _ => panic!("Must enforce factor grammar"),
         }
     }
 
@@ -340,8 +355,24 @@ mod tests {
     fn it_enforces_unrecognized_tokens() {
         let tokens = scan("1 a 2");
         match expression(&tokens) {
-            Ok(_) => panic!("Must enforce unrecognized tokens"),
-            Err(e) => assert_eq!("Unrecognized token", e.description()),
+            Err(ParseError::InvalidToken) => (),
+            _ => panic!("Must enforce unrecognized tokens"),
+        }
+    }
+
+    #[test]
+    fn it_evaluates_input() {
+        match eval("1 + 2") {
+            Ok(value) => assert_eq!(3 as f64, value),
+            Err(_) => panic!("Must eval expression"),
+        }
+    }
+
+    #[test]
+    fn it_enforces_extra_tokens() {
+        match eval("1 2") {
+            Err(ParseError::UnexpectedToken) => (),
+            _ => panic!("Must enforce extra tokens"),
         }
     }
 }
