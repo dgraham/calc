@@ -1,15 +1,35 @@
+use std::error;
+use std::fmt;
+
+#[derive(Debug)]
+pub enum ParseError<'a> {
+    Grammar(&'a str),
+}
+
+impl<'a> fmt::Display for ParseError<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ParseError::Grammar(reason) => reason.fmt(f),
+        }
+    }
+}
+
+impl<'a> error::Error for ParseError<'a> {
+    fn description(&self) -> &str {
+        match *self {
+            ParseError::Grammar(reason) => reason,
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match *self {
+            ParseError::Grammar(_) => None,
+        }
+    }
+}
+
 pub trait Node {
     fn value(&self) -> f64;
-}
-
-struct NegationNode {
-    rhs: Box<Node>,
-}
-
-impl Node for NegationNode {
-    fn value(&self) -> f64 {
-        -self.rhs.value()
-    }
 }
 
 struct AddNode {
@@ -53,6 +73,16 @@ struct DivideNode {
 impl Node for DivideNode {
     fn value(&self) -> f64 {
         self.lhs.value() / self.rhs.value()
+    }
+}
+
+struct NegationNode {
+    rhs: Box<Node>,
+}
+
+impl Node for NegationNode {
+    fn value(&self) -> f64 {
+        -self.rhs.value()
     }
 }
 
@@ -102,7 +132,7 @@ pub fn scan(text: &str) -> Vec<Token> {
         .collect()
 }
 
-pub fn expression(tokens: &[Token]) -> Result<Partial, &str> {
+pub fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
     let term = try!(term(tokens));
 
     match term.tokens.split_first() {
@@ -135,7 +165,7 @@ pub fn expression(tokens: &[Token]) -> Result<Partial, &str> {
     }
 }
 
-fn term(tokens: &[Token]) -> Result<Partial, &str> {
+fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
     let factor = try!(factor(tokens));
 
     match factor.tokens.split_first() {
@@ -168,7 +198,7 @@ fn term(tokens: &[Token]) -> Result<Partial, &str> {
     }
 }
 
-fn factor(tokens: &[Token]) -> Result<Partial, &str> {
+fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
     match tokens.split_first() {
         Some((token, tokens)) => {
             match *token {
@@ -196,21 +226,22 @@ fn factor(tokens: &[Token]) -> Result<Partial, &str> {
                                         tokens: tokens,
                                     })
                                 }
-                                _ => Err("expected close paren"),
+                                _ => Err(ParseError::Grammar("Expected group close")),
                             }
                         }
-                        None => Err("expected close paren"),
+                        None => Err(ParseError::Grammar("Expected group close")),
                     }
                 }
-                _ => Err("expected integer, negation, or group"),
+                _ => Err(ParseError::Grammar("Expected integer, negation, or group")),
             }
         }
-        None => Err("expected factor"),
+        None => Err(ParseError::Grammar("Expected factor")),
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::error::Error;
     use super::{expression, scan, Token};
 
     #[test]
@@ -227,14 +258,6 @@ mod tests {
         assert_eq!(3, tokens.len());
         assert_eq!(vec![Token::Number(1), Token::Unrecognized('a'), Token::Number(2)],
                    tokens);
-    }
-
-    #[test]
-    fn it_parses() {
-        let tokens = scan("1 + 2");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(3 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
     }
 
     #[test]
@@ -283,5 +306,32 @@ mod tests {
         let expr = expression(&tokens).unwrap();
         assert_eq!(-12 as f64, expr.node.value());
         assert_eq!(0, expr.tokens.len());
+    }
+
+    #[test]
+    fn it_enforces_group_close() {
+        let tokens = scan("(1");
+        match expression(&tokens) {
+            Ok(_) => panic!("Must enforce closing paren"),
+            Err(e) => assert_eq!("Expected group close", e.description()),
+        }
+    }
+
+    #[test]
+    fn it_enforces_missing_factor() {
+        let tokens = scan("(");
+        match expression(&tokens) {
+            Ok(_) => panic!("Must enforce factor grammar"),
+            Err(e) => assert_eq!("Expected factor", e.description()),
+        }
+    }
+
+    #[test]
+    fn it_enforces_factor_operators() {
+        let tokens = scan("1 + *");
+        match expression(&tokens) {
+            Ok(_) => panic!("Must enforce factor grammar"),
+            Err(e) => assert_eq!("Expected integer, negation, or group", e.description()),
+        }
     }
 }
