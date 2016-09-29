@@ -105,7 +105,6 @@ pub enum Token {
     Solidus,
     LeftParen,
     RightParen,
-    Whitespace,
     Unrecognized(char),
 }
 
