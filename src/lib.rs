@@ -131,7 +131,7 @@ pub fn scan(text: &str) -> Vec<Token> {
                 '/' => Some(Token::Solidus),
                 '(' => Some(Token::LeftParen),
                 ')' => Some(Token::RightParen),
-                ' ' => None,
+                ' ' | '\n' | '\t' => None,
                 _ => Some(Token::Unrecognized(ch)),
             }
         })
@@ -273,6 +273,13 @@ mod tests {
         assert_eq!(3, tokens.len());
         assert_eq!(vec![Token::Digit(1), Token::Unrecognized('a'), Token::Digit(2)],
                    tokens);
+    }
+
+    #[test]
+    fn it_ignores_whitespace() {
+        let tokens = scan("\t 1 \n\n + 2 \t");
+        assert_eq!(3, tokens.len());
+        assert_eq!(vec![Token::Digit(1), Token::Plus, Token::Digit(2)], tokens);
     }
 
     #[test]
