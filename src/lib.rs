@@ -105,7 +105,7 @@ impl Node for IntNode {
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    Number(u32),
+    Digit(u32),
     Plus,
     Minus,
     Star,
@@ -124,7 +124,7 @@ pub fn scan(text: &str) -> Vec<Token> {
     text.chars()
         .filter_map(|ch| {
             match ch {
-                '0'...'9' => Some(Token::Number(ch.to_digit(10).unwrap())),
+                '0'...'9' => Some(Token::Digit(ch.to_digit(10).unwrap())),
                 '+' => Some(Token::Plus),
                 '-' => Some(Token::Minus),
                 '*' => Some(Token::Star),
@@ -210,7 +210,7 @@ fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
     match tokens.split_first() {
         Some((token, tokens)) => {
             match *token {
-                Token::Number(value) => {
+                Token::Digit(value) => {
                     Ok(Partial {
                         node: Box::new(IntNode { value: value }),
                         tokens: tokens,
@@ -264,15 +264,14 @@ mod tests {
     fn it_scans() {
         let tokens = scan("1 + 2");
         assert_eq!(3, tokens.len());
-        assert_eq!(vec![Token::Number(1), Token::Plus, Token::Number(2)],
-                   tokens);
+        assert_eq!(vec![Token::Digit(1), Token::Plus, Token::Digit(2)], tokens);
     }
 
     #[test]
     fn it_scans_unrecognized_tokens() {
         let tokens = scan("1 a 2");
         assert_eq!(3, tokens.len());
-        assert_eq!(vec![Token::Number(1), Token::Unrecognized('a'), Token::Number(2)],
+        assert_eq!(vec![Token::Digit(1), Token::Unrecognized('a'), Token::Digit(2)],
                    tokens);
     }
 
