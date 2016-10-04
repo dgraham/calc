@@ -1,6 +1,10 @@
 # Calculator
 
-A recursive descent parser for mathematic expressions.
+A recursive descent parser for mathematic expressions based on the
+grammar in [Jamis Buck][jamis]'s [parser challenge][challenge].
+
+[jamis]: https://github.com/jamis
+[challenge]: http://weblog.jamisbuck.org/2016/9/17/weekly-programming-challenge-8.html
 
 ## Usage
 

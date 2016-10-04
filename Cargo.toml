@@ -2,5 +2,8 @@
 name = "calc"
 version = "0.1.0"
 authors = ["David Graham <david.malcom.graham@gmail.com>"]
+description = "A recursive descent parser for mathematic expressions."
+repository = "https://github.com/dgraham/calc"
+license = "MIT"
 
 [dependencies]
