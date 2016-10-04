@@ -94,7 +94,7 @@ impl Node for NegationNode {
 }
 
 struct IntNode {
-    value: u32,
+    value: u64,
 }
 
 impl Node for IntNode {
@@ -123,9 +123,9 @@ impl Token {
         }
     }
 
-    fn value(&self) -> u32 {
+    fn value(&self) -> u64 {
         match *self {
-            Token::Digit(value) => value,
+            Token::Digit(value) => value as u64,
             _ => 0,
         }
     }
@@ -223,19 +223,19 @@ fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
 }
 
 fn integer(tokens: &[Token]) -> Option<Partial> {
-    let digits: Vec<u32> = tokens.iter()
+    let digits: Vec<u64> = tokens.iter()
         .take_while(|token| token.is_digit())
         .map(|token| token.value())
         .collect();
 
+    let sum = digits.iter()
+        .rev()
+        .enumerate()
+        .fold(0, |sum, (ix, digit)| sum + digit * 10u64.pow(ix as u32));
+
     match digits.len() {
         0 => None,
         _ => {
-            let sum = digits.iter()
-                .rev()
-                .enumerate()
-                .fold(0, |sum, (ix, digit)| sum + digit * 10u32.pow(ix as u32));
-
             Some(Partial {
                 node: Box::new(IntNode { value: sum }),
                 tokens: &tokens[digits.len()..],
