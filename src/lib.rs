@@ -115,6 +115,22 @@ pub enum Token {
     Unrecognized(char),
 }
 
+impl Token {
+    fn is_digit(&self) -> bool {
+        match *self {
+            Token::Digit(_) => true,
+            _ => false,
+        }
+    }
+
+    fn value(&self) -> u32 {
+        match *self {
+            Token::Digit(value) => value,
+            _ => 0,
+        }
+    }
+}
+
 pub struct Partial<'a> {
     node: Box<Node>,
     tokens: &'a [Token],
@@ -206,16 +222,36 @@ fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
     }
 }
 
+fn integer(tokens: &[Token]) -> Option<Partial> {
+    let digits: Vec<u32> = tokens.iter()
+        .take_while(|token| token.is_digit())
+        .map(|token| token.value())
+        .collect();
+
+    match digits.len() {
+        0 => None,
+        _ => {
+            let sum = digits.iter()
+                .rev()
+                .enumerate()
+                .fold(0, |sum, (ix, digit)| sum + digit * 10u32.pow(ix as u32));
+
+            Some(Partial {
+                node: Box::new(IntNode { value: sum }),
+                tokens: &tokens[digits.len()..],
+            })
+        }
+    }
+}
+
 fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
+    if let Some(integer) = integer(tokens) {
+        return Ok(integer);
+    }
+
     match tokens.split_first() {
         Some((token, tokens)) => {
             match *token {
-                Token::Digit(value) => {
-                    Ok(Partial {
-                        node: Box::new(IntNode { value: value }),
-                        tokens: tokens,
-                    })
-                }
                 Token::Minus => {
                     let factor = try!(factor(tokens));
                     Ok(Partial {
@@ -331,6 +367,22 @@ mod tests {
     }
 
     #[test]
+    fn it_parses_multiple_digits() {
+        let tokens = scan("1 + 41");
+        let expr = expression(&tokens).unwrap();
+        assert_eq!(42 as f64, expr.node.value());
+        assert_eq!(0, expr.tokens.len());
+    }
+
+    #[test]
+    fn it_parses_embedded_zero() {
+        let tokens = scan("1 + 102");
+        let expr = expression(&tokens).unwrap();
+        assert_eq!(103 as f64, expr.node.value());
+        assert_eq!(0, expr.tokens.len());
+    }
+
+    #[test]
     fn it_enforces_group_close() {
         let tokens = scan("(1");
         match expression(&tokens) {
@@ -376,7 +428,7 @@ mod tests {
 
     #[test]
     fn it_enforces_extra_tokens() {
-        match eval("1 2") {
+        match eval("(1 + 2) 2") {
             Err(ParseError::UnexpectedToken) => (),
             _ => panic!("Must enforce extra tokens"),
         }
