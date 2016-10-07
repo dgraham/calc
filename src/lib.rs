@@ -35,71 +35,25 @@ impl error::Error for ParseError {
     }
 }
 
-pub trait Node {
-    fn value(&self) -> f64;
+enum Node {
+    Add(Box<Node>, Box<Node>),
+    Subtract(Box<Node>, Box<Node>),
+    Multiply(Box<Node>, Box<Node>),
+    Divide(Box<Node>, Box<Node>),
+    Negate(Box<Node>),
+    Int(u64),
 }
 
-struct AddNode {
-    lhs: Box<Node>,
-    rhs: Box<Node>,
-}
-
-impl Node for AddNode {
+impl Node {
     fn value(&self) -> f64 {
-        self.lhs.value() + self.rhs.value()
-    }
-}
-
-struct SubtractNode {
-    lhs: Box<Node>,
-    rhs: Box<Node>,
-}
-
-impl Node for SubtractNode {
-    fn value(&self) -> f64 {
-        self.lhs.value() - self.rhs.value()
-    }
-}
-
-struct MultiplyNode {
-    lhs: Box<Node>,
-    rhs: Box<Node>,
-}
-
-impl Node for MultiplyNode {
-    fn value(&self) -> f64 {
-        self.lhs.value() * self.rhs.value()
-    }
-}
-
-struct DivideNode {
-    lhs: Box<Node>,
-    rhs: Box<Node>,
-}
-
-impl Node for DivideNode {
-    fn value(&self) -> f64 {
-        self.lhs.value() / self.rhs.value()
-    }
-}
-
-struct NegationNode {
-    rhs: Box<Node>,
-}
-
-impl Node for NegationNode {
-    fn value(&self) -> f64 {
-        -self.rhs.value()
-    }
-}
-
-struct IntNode {
-    value: u64,
-}
-
-impl Node for IntNode {
-    fn value(&self) -> f64 {
-        self.value as f64
+        match *self {
+            Node::Add(ref lhs, ref rhs) => lhs.value() + rhs.value(),
+            Node::Subtract(ref lhs, ref rhs) => lhs.value() - rhs.value(),
+            Node::Multiply(ref lhs, ref rhs) => lhs.value() * rhs.value(),
+            Node::Divide(ref lhs, ref rhs) => lhs.value() / rhs.value(),
+            Node::Negate(ref rhs) => -rhs.value(),
+            Node::Int(value) => value as f64,
+        }
     }
 }
 
@@ -132,7 +86,7 @@ impl Token {
 }
 
 pub struct Partial<'a> {
-    node: Box<Node>,
+    node: Node,
     tokens: &'a [Token],
 }
 
@@ -163,20 +117,14 @@ pub fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
                 Token::Plus => {
                     let expr = try!(expression(tokens));
                     Ok(Partial {
-                        node: Box::new(AddNode {
-                            lhs: term.node,
-                            rhs: expr.node,
-                        }),
+                        node: Node::Add(Box::new(term.node), Box::new(expr.node)),
                         tokens: expr.tokens,
                     })
                 }
                 Token::Minus => {
                     let expr = try!(expression(tokens));
                     Ok(Partial {
-                        node: Box::new(SubtractNode {
-                            lhs: term.node,
-                            rhs: expr.node,
-                        }),
+                        node: Node::Subtract(Box::new(term.node), Box::new(expr.node)),
                         tokens: expr.tokens,
                     })
                 }
@@ -197,20 +145,14 @@ fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
                 Token::Star => {
                     let term = try!(term(tokens));
                     Ok(Partial {
-                        node: Box::new(MultiplyNode {
-                            lhs: factor.node,
-                            rhs: term.node,
-                        }),
+                        node: Node::Multiply(Box::new(factor.node), Box::new(term.node)),
                         tokens: term.tokens,
                     })
                 }
                 Token::Solidus => {
                     let term = try!(term(tokens));
                     Ok(Partial {
-                        node: Box::new(DivideNode {
-                            lhs: factor.node,
-                            rhs: term.node,
-                        }),
+                        node: Node::Divide(Box::new(factor.node), Box::new(term.node)),
                         tokens: term.tokens,
                     })
                 }
@@ -237,7 +179,7 @@ fn integer(tokens: &[Token]) -> Option<Partial> {
         0 => None,
         _ => {
             Some(Partial {
-                node: Box::new(IntNode { value: sum }),
+                node: Node::Int(sum),
                 tokens: &tokens[digits.len()..],
             })
         }
@@ -255,7 +197,7 @@ fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
                 Token::Minus => {
                     let factor = try!(factor(tokens));
                     Ok(Partial {
-                        node: Box::new(NegationNode { rhs: factor.node }),
+                        node: Node::Negate(Box::new(factor.node)),
                         tokens: factor.tokens,
                     })
                 }
