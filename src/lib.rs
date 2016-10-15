@@ -1,6 +1,7 @@
 use std::error;
 use std::error::Error;
 use std::fmt;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -35,12 +36,12 @@ impl error::Error for ParseError {
     }
 }
 
-enum Node {
-    Add(Box<Node>, Box<Node>),
-    Subtract(Box<Node>, Box<Node>),
-    Multiply(Box<Node>, Box<Node>),
-    Divide(Box<Node>, Box<Node>),
-    Negate(Box<Node>),
+pub enum Node {
+    Add(Rc<Node>, Rc<Node>),
+    Subtract(Rc<Node>, Rc<Node>),
+    Multiply(Rc<Node>, Rc<Node>),
+    Divide(Rc<Node>, Rc<Node>),
+    Negate(Rc<Node>),
     Int(u64),
 }
 
@@ -86,7 +87,7 @@ impl Token {
 }
 
 pub struct Partial<'a> {
-    node: Node,
+    node: Rc<Node>,
     tokens: &'a [Token],
 }
 
@@ -117,14 +118,14 @@ pub fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
                 Token::Plus => {
                     let expr = try!(expression(tokens));
                     Ok(Partial {
-                        node: Node::Add(Box::new(term.node), Box::new(expr.node)),
+                        node: Rc::new(Node::Add(term.node, expr.node)),
                         tokens: expr.tokens,
                     })
                 }
                 Token::Minus => {
                     let expr = try!(expression(tokens));
                     Ok(Partial {
-                        node: Node::Subtract(Box::new(term.node), Box::new(expr.node)),
+                        node: Rc::new(Node::Subtract(term.node, expr.node)),
                         tokens: expr.tokens,
                     })
                 }
@@ -145,14 +146,14 @@ fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
                 Token::Star => {
                     let term = try!(term(tokens));
                     Ok(Partial {
-                        node: Node::Multiply(Box::new(factor.node), Box::new(term.node)),
+                        node: Rc::new(Node::Multiply(factor.node, term.node)),
                         tokens: term.tokens,
                     })
                 }
                 Token::Solidus => {
                     let term = try!(term(tokens));
                     Ok(Partial {
-                        node: Node::Divide(Box::new(factor.node), Box::new(term.node)),
+                        node: Rc::new(Node::Divide(factor.node, term.node)),
                         tokens: term.tokens,
                     })
                 }
@@ -179,7 +180,7 @@ fn integer(tokens: &[Token]) -> Option<Partial> {
         0 => None,
         _ => {
             Some(Partial {
-                node: Node::Int(sum),
+                node: Rc::new(Node::Int(sum)),
                 tokens: &tokens[digits.len()..],
             })
         }
@@ -197,7 +198,7 @@ fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
                 Token::Minus => {
                     let factor = try!(factor(tokens));
                     Ok(Partial {
-                        node: Node::Negate(Box::new(factor.node)),
+                        node: Rc::new(Node::Negate(factor.node)),
                         tokens: factor.tokens,
                     })
                 }
@@ -234,9 +235,54 @@ pub fn eval(text: &str) -> Result<f64, ParseError> {
     }
 }
 
+struct Iter {
+    stack: Vec<Rc<Node>>,
+}
+
+impl Iter {
+    fn new(root: Rc<Node>) -> Self {
+        Iter { stack: vec![root] }
+    }
+}
+
+impl Iterator for Iter {
+    type Item = Rc<Node>;
+
+    fn next(&mut self) -> Option<Rc<Node>> {
+        match self.stack.pop() {
+            Some(node) => {
+                match *node {
+                    Node::Add(ref lhs, ref rhs) |
+                    Node::Subtract(ref lhs, ref rhs) |
+                    Node::Multiply(ref lhs, ref rhs) |
+                    Node::Divide(ref lhs, ref rhs) => {
+                        self.stack.push(rhs.clone());
+                        self.stack.push(lhs.clone());
+                    }
+                    Node::Negate(ref rhs) => {
+                        self.stack.push(rhs.clone());
+                    }
+                    Node::Int(_) => (),
+                }
+                Some(node)
+            }
+            None => None,
+        }
+    }
+}
+
+// impl IntoIterator for Node {
+//     type Item = Node;
+//     type IntoIter = Iter;
+
+//     fn into_iter(self) -> Self::IntoIter {
+//         Iter::new(self)
+//     }
+// }
+
 #[cfg(test)]
 mod tests {
-    use super::{eval, expression, scan, ParseError, Token};
+    use super::{eval, expression, scan, Iter, Node, ParseError, Token};
 
     #[test]
     fn it_scans() {
@@ -374,5 +420,26 @@ mod tests {
             Err(ParseError::UnexpectedToken) => (),
             _ => panic!("Must enforce extra tokens"),
         }
+    }
+
+    #[test]
+    fn it_iterates() {
+        let tokens = scan("1 + (2 - 3) * 4 / 5 * 6");
+        let expr = expression(&tokens).unwrap();
+        let iter = Iter::new(expr.node);
+        let mapped: Vec<String> = iter.map(|node| {
+                match *node {
+                    Node::Add(..) => String::from("+"),
+                    Node::Subtract(..) => String::from("-"),
+                    Node::Multiply(..) => String::from("*"),
+                    Node::Divide(..) => String::from("/"),
+                    Node::Negate(..) => String::from("--"),
+                    Node::Int(value) => value.to_string(),
+                }
+            })
+            .collect();
+
+        assert_eq!(vec!["+", "1", "*", "-", "2", "3", "/", "4", "*", "5", "6"],
+                   mapped);
     }
 }
