@@ -58,6 +58,19 @@ impl Node {
     }
 }
 
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Node::Add(..) => write!(f, "+"),
+            Node::Subtract(..) => write!(f, "-"),
+            Node::Multiply(..) => write!(f, "*"),
+            Node::Divide(..) => write!(f, "/"),
+            Node::Negate(..) => write!(f, "-"),
+            Node::Int(value) => write!(f, "{}", value.to_string()),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Digit(u32),
@@ -427,18 +440,7 @@ mod tests {
         let tokens = scan("1 + (2 - 3) * 4 / 5 * 6");
         let expr = expression(&tokens).unwrap();
         let iter = Iter::new(expr.node);
-        let mapped: Vec<String> = iter.map(|node| {
-                match *node {
-                    Node::Add(..) => String::from("+"),
-                    Node::Subtract(..) => String::from("-"),
-                    Node::Multiply(..) => String::from("*"),
-                    Node::Divide(..) => String::from("/"),
-                    Node::Negate(..) => String::from("--"),
-                    Node::Int(value) => value.to_string(),
-                }
-            })
-            .collect();
-
+        let mapped: Vec<String> = iter.map(|node| node.to_string()).collect();
         assert_eq!(vec!["+", "1", "*", "-", "2", "3", "/", "4", "*", "5", "6"],
                    mapped);
     }
