@@ -3,6 +3,10 @@ use std::error::Error;
 use std::fmt;
 use std::rc::Rc;
 
+use scanner::{Scanner, Token};
+
+mod scanner;
+
 #[derive(Debug)]
 pub enum ParseError {
     UnexpectedToken,
@@ -71,55 +75,14 @@ impl fmt::Display for Node {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Token {
-    Digit(u32),
-    Plus,
-    Minus,
-    Star,
-    Solidus,
-    LeftParen,
-    RightParen,
-    Unrecognized(char),
-}
-
-impl Token {
-    fn is_digit(&self) -> bool {
-        match *self {
-            Token::Digit(_) => true,
-            _ => false,
-        }
-    }
-
-    fn value(&self) -> u64 {
-        match *self {
-            Token::Digit(value) => value as u64,
-            _ => 0,
-        }
-    }
-}
-
 pub struct Partial<'a> {
     node: Rc<Node>,
     tokens: &'a [Token],
 }
 
 pub fn scan(text: &str) -> Vec<Token> {
-    text.chars()
-        .filter_map(|ch| {
-            match ch {
-                '0'...'9' => Some(Token::Digit(ch.to_digit(10).unwrap())),
-                '+' => Some(Token::Plus),
-                '-' => Some(Token::Minus),
-                '*' => Some(Token::Star),
-                '/' => Some(Token::Solidus),
-                '(' => Some(Token::LeftParen),
-                ')' => Some(Token::RightParen),
-                ' ' | '\n' | '\t' => None,
-                _ => Some(Token::Unrecognized(ch)),
-            }
-        })
-        .collect()
+    let scanner = Scanner::new(text);
+    return scanner.collect();
 }
 
 pub fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
@@ -284,40 +247,9 @@ impl Iterator for Iter {
     }
 }
 
-// impl IntoIterator for Node {
-//     type Item = Node;
-//     type IntoIter = Iter;
-
-//     fn into_iter(self) -> Self::IntoIter {
-//         Iter::new(self)
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
-    use super::{eval, expression, scan, Iter, Node, ParseError, Token};
-
-    #[test]
-    fn it_scans() {
-        let tokens = scan("1 + 2");
-        assert_eq!(3, tokens.len());
-        assert_eq!(vec![Token::Digit(1), Token::Plus, Token::Digit(2)], tokens);
-    }
-
-    #[test]
-    fn it_scans_unrecognized_tokens() {
-        let tokens = scan("1 a 2");
-        assert_eq!(3, tokens.len());
-        assert_eq!(vec![Token::Digit(1), Token::Unrecognized('a'), Token::Digit(2)],
-                   tokens);
-    }
-
-    #[test]
-    fn it_ignores_whitespace() {
-        let tokens = scan("\t 1 \n\n + 2 \t");
-        assert_eq!(3, tokens.len());
-        assert_eq!(vec![Token::Digit(1), Token::Plus, Token::Digit(2)], tokens);
-    }
+    use super::{eval, expression, scan, Iter, ParseError};
 
     #[test]
     fn it_adds() {
