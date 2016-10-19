@@ -80,11 +80,6 @@ pub struct Partial<'a> {
     tokens: &'a [Token],
 }
 
-pub fn scan(text: &str) -> Vec<Token> {
-    let scanner = Scanner::new(text);
-    return scanner.collect();
-}
-
 pub fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
     let term = try!(term(tokens));
 
@@ -203,7 +198,8 @@ fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
 }
 
 pub fn eval(text: &str) -> Result<f64, ParseError> {
-    let tokens = scan(text);
+    let scanner = Scanner::new(text);
+    let tokens: Vec<Token> = scanner.collect();
     let expr = try!(expression(&tokens));
     match expr.tokens.len() {
         0 => Ok(expr.node.value()),
@@ -249,76 +245,52 @@ impl Iterator for Iter {
 
 #[cfg(test)]
 mod tests {
-    use super::{eval, expression, scan, Iter, ParseError};
+    use super::{eval, expression, Iter, ParseError};
+    use super::scanner::{Scanner, Token};
 
     #[test]
     fn it_adds() {
-        let tokens = scan("1 + 2");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(3 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
+        assert_eq!(3 as f64, eval("1 + 2").unwrap());
     }
 
     #[test]
     fn it_multiplies() {
-        let tokens = scan("2 * 8");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(16 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
+        assert_eq!(16 as f64, eval("2 * 8").unwrap());
     }
 
     #[test]
     fn it_enforces_operation_order() {
-        let tokens = scan("4 + 2 * 8");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(20 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
+        assert_eq!(20 as f64, eval("4 + 2 * 8").unwrap());
     }
 
     #[test]
     fn it_groups_terms() {
-        let tokens = scan("((((5)+2)*2)-5)/3");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(3 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
+        assert_eq!(3 as f64, eval("((((5)+2)*2)-5)/3").unwrap());
     }
 
     #[test]
     fn it_negates_values() {
-        let tokens = scan("6 * -3");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(-18 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
+        assert_eq!(-18 as f64, eval("6 * -3").unwrap());
     }
 
     #[test]
     fn it_negates_groups() {
-        let tokens = scan("-(5 * 2) - 2");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(-12 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
+        assert_eq!(-12 as f64, eval("-(5 * 2) - 2").unwrap());
     }
 
     #[test]
     fn it_parses_multiple_digits() {
-        let tokens = scan("1 + 41");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(42 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
+        assert_eq!(42 as f64, eval("1 + 41").unwrap());
     }
 
     #[test]
     fn it_parses_embedded_zero() {
-        let tokens = scan("1 + 102");
-        let expr = expression(&tokens).unwrap();
-        assert_eq!(103 as f64, expr.node.value());
-        assert_eq!(0, expr.tokens.len());
+        assert_eq!(103 as f64, eval("1 + 102").unwrap());
     }
 
     #[test]
     fn it_enforces_group_close() {
-        let tokens = scan("(1");
-        match expression(&tokens) {
+        match eval("(1") {
             Err(ParseError::InvalidGroup) => (),
             _ => panic!("Must enforce closing paren"),
         }
@@ -326,8 +298,7 @@ mod tests {
 
     #[test]
     fn it_enforces_missing_factor() {
-        let tokens = scan("(");
-        match expression(&tokens) {
+        match eval("(") {
             Err(ParseError::FactorExpected) => (),
             _ => panic!("Must enforce factor grammar"),
         }
@@ -335,8 +306,7 @@ mod tests {
 
     #[test]
     fn it_enforces_factor_operators() {
-        let tokens = scan("1 + *");
-        match expression(&tokens) {
+        match eval("1 + *") {
             Err(ParseError::FactorExpected) => (),
             _ => panic!("Must enforce factor grammar"),
         }
@@ -344,18 +314,9 @@ mod tests {
 
     #[test]
     fn it_enforces_unrecognized_tokens() {
-        let tokens = scan("1 a 2");
-        match expression(&tokens) {
+        match eval("1 a 2") {
             Err(ParseError::InvalidToken) => (),
             _ => panic!("Must enforce unrecognized tokens"),
-        }
-    }
-
-    #[test]
-    fn it_evaluates_input() {
-        match eval("1 + 2") {
-            Ok(value) => assert_eq!(3 as f64, value),
-            Err(_) => panic!("Must eval expression"),
         }
     }
 
@@ -369,7 +330,8 @@ mod tests {
 
     #[test]
     fn it_iterates() {
-        let tokens = scan("1 + (2 - 3) * 4 / 5 * 6");
+        let scanner = Scanner::new("1 + (2 - 3) * 4 / 5 * 6");
+        let tokens: Vec<Token> = scanner.collect();
         let expr = expression(&tokens).unwrap();
         let iter = Iter::new(expr.node);
         let mapped: Vec<String> = iter.map(|node| node.to_string()).collect();
