@@ -1,44 +1,11 @@
-use std::error;
-use std::error::Error;
 use std::fmt;
 use std::rc::Rc;
 
+use error::ParseError;
 use scanner::{Scanner, Token};
 
+mod error;
 mod scanner;
-
-#[derive(Debug)]
-pub enum ParseError {
-    UnexpectedToken,
-    InvalidToken,
-    InvalidGroup,
-    FactorExpected,
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            _ => write!(f, "{}", self.description()),
-        }
-    }
-}
-
-impl error::Error for ParseError {
-    fn description(&self) -> &str {
-        match *self {
-            ParseError::UnexpectedToken => "Unconsumed input",
-            ParseError::InvalidToken => "Unrecognized token",
-            ParseError::InvalidGroup => "Expected group close",
-            ParseError::FactorExpected => "Expected integer, negation, or group",
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        match *self {
-            _ => None,
-        }
-    }
-}
 
 pub enum Node {
     Add(Rc<Node>, Rc<Node>),
@@ -245,8 +212,9 @@ impl Iterator for Iter {
 
 #[cfg(test)]
 mod tests {
-    use super::{eval, expression, Iter, ParseError};
-    use super::scanner::{Scanner, Token};
+    use super::{eval, expression, Iter};
+    use error::ParseError;
+    use scanner::{Scanner, Token};
 
     #[test]
     fn it_adds() {
