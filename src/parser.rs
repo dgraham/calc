@@ -1,43 +1,8 @@
-use std::fmt;
 use std::rc::Rc;
 
 use error::ParseError;
 use scanner::Token;
-
-pub enum Node {
-    Add(Rc<Node>, Rc<Node>),
-    Subtract(Rc<Node>, Rc<Node>),
-    Multiply(Rc<Node>, Rc<Node>),
-    Divide(Rc<Node>, Rc<Node>),
-    Negate(Rc<Node>),
-    Int(u64),
-}
-
-impl Node {
-    pub fn value(&self) -> f64 {
-        match *self {
-            Node::Add(ref lhs, ref rhs) => lhs.value() + rhs.value(),
-            Node::Subtract(ref lhs, ref rhs) => lhs.value() - rhs.value(),
-            Node::Multiply(ref lhs, ref rhs) => lhs.value() * rhs.value(),
-            Node::Divide(ref lhs, ref rhs) => lhs.value() / rhs.value(),
-            Node::Negate(ref rhs) => -rhs.value(),
-            Node::Int(value) => value as f64,
-        }
-    }
-}
-
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Node::Add(..) => write!(f, "+"),
-            Node::Subtract(..) => write!(f, "-"),
-            Node::Multiply(..) => write!(f, "*"),
-            Node::Divide(..) => write!(f, "/"),
-            Node::Negate(..) => write!(f, "-"),
-            Node::Int(value) => write!(f, "{}", value.to_string()),
-        }
-    }
-}
+use node::{BinaryOp, Constant, Node, UnaryOp};
 
 pub struct Partial<'a> {
     pub node: Rc<Node>,
@@ -67,14 +32,14 @@ impl Parser {
                     Token::Plus => {
                         let expr = try!(self.expression(tokens));
                         Ok(Partial {
-                            node: Rc::new(Node::Add(term.node, expr.node)),
+                            node: Rc::new(BinaryOp::add(term.node, expr.node)),
                             tokens: expr.tokens,
                         })
                     }
                     Token::Minus => {
                         let expr = try!(self.expression(tokens));
                         Ok(Partial {
-                            node: Rc::new(Node::Subtract(term.node, expr.node)),
+                            node: Rc::new(BinaryOp::subtract(term.node, expr.node)),
                             tokens: expr.tokens,
                         })
                     }
@@ -95,14 +60,14 @@ impl Parser {
                     Token::Star => {
                         let term = try!(self.term(tokens));
                         Ok(Partial {
-                            node: Rc::new(Node::Multiply(factor.node, term.node)),
+                            node: Rc::new(BinaryOp::multiply(factor.node, term.node)),
                             tokens: term.tokens,
                         })
                     }
                     Token::Solidus => {
                         let term = try!(self.term(tokens));
                         Ok(Partial {
-                            node: Rc::new(Node::Divide(factor.node, term.node)),
+                            node: Rc::new(BinaryOp::divide(factor.node, term.node)),
                             tokens: term.tokens,
                         })
                     }
@@ -129,7 +94,7 @@ impl Parser {
             0 => None,
             _ => {
                 Some(Partial {
-                    node: Rc::new(Node::Int(sum)),
+                    node: Rc::new(Constant::new(sum)),
                     tokens: &tokens[digits.len()..],
                 })
             }
@@ -147,7 +112,7 @@ impl Parser {
                     Token::Minus => {
                         let factor = try!(self.factor(tokens));
                         Ok(Partial {
-                            node: Rc::new(Node::Negate(factor.node)),
+                            node: Rc::new(UnaryOp::negate(factor.node)),
                             tokens: factor.tokens,
                         })
                     }

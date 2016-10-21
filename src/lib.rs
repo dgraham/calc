@@ -1,11 +1,13 @@
 use std::rc::Rc;
 
 use error::ParseError;
-use parser::{Node, Parser};
+use node::Node;
+use parser::Parser;
 use scanner::{Scanner, Token};
 
 mod error;
 mod parser;
+mod node;
 mod scanner;
 
 pub fn eval(text: &str) -> Result<f64, ParseError> {
@@ -35,19 +37,9 @@ impl Iterator for Iter {
     fn next(&mut self) -> Option<Rc<Node>> {
         match self.stack.pop() {
             Some(node) => {
-                match *node {
-                    Node::Add(ref lhs, ref rhs) |
-                    Node::Subtract(ref lhs, ref rhs) |
-                    Node::Multiply(ref lhs, ref rhs) |
-                    Node::Divide(ref lhs, ref rhs) => {
-                        self.stack.push(rhs.clone());
-                        self.stack.push(lhs.clone());
-                    }
-                    Node::Negate(ref rhs) => {
-                        self.stack.push(rhs.clone());
-                    }
-                    Node::Int(_) => (),
-                }
+                let mut nodes = node.children();
+                nodes.reverse();
+                self.stack.append(&mut nodes);
                 Some(node)
             }
             None => None,
@@ -64,42 +56,42 @@ mod tests {
 
     #[test]
     fn it_adds() {
-        assert_eq!(3 as f64, eval("1 + 2").unwrap());
+        assert_eq!(3.0, eval("1 + 2").unwrap());
     }
 
     #[test]
     fn it_multiplies() {
-        assert_eq!(16 as f64, eval("2 * 8").unwrap());
+        assert_eq!(16.0, eval("2 * 8").unwrap());
     }
 
     #[test]
     fn it_enforces_operation_order() {
-        assert_eq!(20 as f64, eval("4 + 2 * 8").unwrap());
+        assert_eq!(20.0, eval("4 + 2 * 8").unwrap());
     }
 
     #[test]
     fn it_groups_terms() {
-        assert_eq!(3 as f64, eval("((((5)+2)*2)-5)/3").unwrap());
+        assert_eq!(3.0, eval("((((5)+2)*2)-5)/3").unwrap());
     }
 
     #[test]
     fn it_negates_values() {
-        assert_eq!(-18 as f64, eval("6 * -3").unwrap());
+        assert_eq!(-18.0, eval("6 * -3").unwrap());
     }
 
     #[test]
     fn it_negates_groups() {
-        assert_eq!(-12 as f64, eval("-(5 * 2) - 2").unwrap());
+        assert_eq!(-12.0, eval("-(5 * 2) - 2").unwrap());
     }
 
     #[test]
     fn it_parses_multiple_digits() {
-        assert_eq!(42 as f64, eval("1 + 41").unwrap());
+        assert_eq!(42.0, eval("1 + 41").unwrap());
     }
 
     #[test]
     fn it_parses_embedded_zero() {
-        assert_eq!(103 as f64, eval("1 + 102").unwrap());
+        assert_eq!(103.0, eval("1 + 102").unwrap());
     }
 
     #[test]
