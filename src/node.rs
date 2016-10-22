@@ -1,14 +1,14 @@
 use std::fmt;
 use std::rc::Rc;
 
-enum BinOp {
+enum Binary {
     Add,
     Subtract,
     Multiply,
     Divide,
 }
 
-enum UnOp {
+enum Unary {
     Negate,
 }
 
@@ -19,7 +19,7 @@ pub trait Node: fmt::Display {
 
 pub struct BinaryOp {
     id: usize,
-    op: BinOp,
+    op: Binary,
     lhs: Rc<Node>,
     rhs: Rc<Node>,
 }
@@ -28,7 +28,7 @@ impl BinaryOp {
     pub fn add(lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
         BinaryOp {
             id: 0,
-            op: BinOp::Add,
+            op: Binary::Add,
             lhs: lhs,
             rhs: rhs,
         }
@@ -37,7 +37,7 @@ impl BinaryOp {
     pub fn subtract(lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
         BinaryOp {
             id: 0,
-            op: BinOp::Subtract,
+            op: Binary::Subtract,
             lhs: lhs,
             rhs: rhs,
         }
@@ -46,7 +46,7 @@ impl BinaryOp {
     pub fn multiply(lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
         BinaryOp {
             id: 0,
-            op: BinOp::Multiply,
+            op: Binary::Multiply,
             lhs: lhs,
             rhs: rhs,
         }
@@ -55,7 +55,7 @@ impl BinaryOp {
     pub fn divide(lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
         BinaryOp {
             id: 0,
-            op: BinOp::Divide,
+            op: Binary::Divide,
             lhs: lhs,
             rhs: rhs,
         }
@@ -65,10 +65,10 @@ impl BinaryOp {
 impl fmt::Display for BinaryOp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.op {
-            BinOp::Add => write!(f, "+"),
-            BinOp::Subtract => write!(f, "-"),
-            BinOp::Multiply => write!(f, "*"),
-            BinOp::Divide => write!(f, "/"),
+            Binary::Add => write!(f, "+"),
+            Binary::Subtract => write!(f, "-"),
+            Binary::Multiply => write!(f, "*"),
+            Binary::Divide => write!(f, "/"),
         }
     }
 }
@@ -76,10 +76,10 @@ impl fmt::Display for BinaryOp {
 impl Node for BinaryOp {
     fn value(&self) -> f64 {
         match self.op {
-            BinOp::Add => self.lhs.value() + self.rhs.value(),
-            BinOp::Subtract => self.lhs.value() - self.rhs.value(),
-            BinOp::Multiply => self.lhs.value() * self.rhs.value(),
-            BinOp::Divide => self.lhs.value() / self.rhs.value(),
+            Binary::Add => self.lhs.value() + self.rhs.value(),
+            Binary::Subtract => self.lhs.value() - self.rhs.value(),
+            Binary::Multiply => self.lhs.value() * self.rhs.value(),
+            Binary::Divide => self.lhs.value() / self.rhs.value(),
         }
     }
 
@@ -90,7 +90,7 @@ impl Node for BinaryOp {
 
 pub struct UnaryOp {
     id: usize,
-    op: UnOp,
+    op: Unary,
     operand: Rc<Node>,
 }
 
@@ -98,7 +98,7 @@ impl UnaryOp {
     pub fn negate(operand: Rc<Node>) -> Self {
         UnaryOp {
             id: 0,
-            op: UnOp::Negate,
+            op: Unary::Negate,
             operand: operand,
         }
     }
@@ -107,7 +107,7 @@ impl UnaryOp {
 impl fmt::Display for UnaryOp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.op {
-            UnOp::Negate => write!(f, "-"),
+            Unary::Negate => write!(f, "-"),
         }
     }
 }
@@ -115,7 +115,7 @@ impl fmt::Display for UnaryOp {
 impl Node for UnaryOp {
     fn value(&self) -> f64 {
         match self.op {
-            UnOp::Negate => -self.operand.value(),
+            Unary::Negate => -self.operand.value(),
         }
     }
 
