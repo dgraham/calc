@@ -66,8 +66,16 @@ mod tests {
 
     #[test]
     fn it_enforces_group_close() {
+        match eval("(1(") {
+            Err(ParseError::InvalidGroup(_)) => (),
+            _ => panic!("Must enforce closing paren"),
+        }
+    }
+
+    #[test]
+    fn it_enforces_group_close_eof() {
         match eval("(1") {
-            Err(ParseError::InvalidGroup) => (),
+            Err(ParseError::UnexpectedEof) => (),
             _ => panic!("Must enforce closing paren"),
         }
     }
@@ -75,7 +83,7 @@ mod tests {
     #[test]
     fn it_enforces_missing_factor() {
         match eval("(") {
-            Err(ParseError::FactorExpected) => (),
+            Err(ParseError::UnexpectedEof) => (),
             _ => panic!("Must enforce factor grammar"),
         }
     }
@@ -83,7 +91,7 @@ mod tests {
     #[test]
     fn it_enforces_factor_operators() {
         match eval("1 + *") {
-            Err(ParseError::FactorExpected) => (),
+            Err(ParseError::FactorExpected(_)) => (),
             _ => panic!("Must enforce factor grammar"),
         }
     }
@@ -91,7 +99,7 @@ mod tests {
     #[test]
     fn it_enforces_unrecognized_tokens() {
         match eval("1 a 2") {
-            Err(ParseError::InvalidToken) => (),
+            Err(ParseError::InvalidToken(_)) => (),
             _ => panic!("Must enforce unrecognized tokens"),
         }
     }

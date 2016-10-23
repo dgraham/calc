@@ -43,7 +43,7 @@ impl Parser {
                             tokens: expr.tokens,
                         })
                     }
-                    TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken),
+                    TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken(token.position)),
                     _ => Ok(term),
                 }
             }
@@ -71,7 +71,7 @@ impl Parser {
                             tokens: term.tokens,
                         })
                     }
-                    TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken),
+                    TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken(token.position)),
                     _ => Ok(factor),
                 }
             }
@@ -127,16 +127,16 @@ impl Parser {
                                             tokens: tokens,
                                         })
                                     }
-                                    _ => Err(ParseError::InvalidGroup),
+                                    _ => Err(ParseError::InvalidGroup(token.position)),
                                 }
                             }
-                            None => Err(ParseError::InvalidGroup),
+                            None => Err(ParseError::UnexpectedEof),
                         }
                     }
-                    _ => Err(ParseError::FactorExpected),
+                    _ => Err(ParseError::FactorExpected(token.position)),
                 }
             }
-            None => Err(ParseError::FactorExpected),
+            None => Err(ParseError::UnexpectedEof),
         }
     }
 }

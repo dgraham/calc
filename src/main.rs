@@ -1,7 +1,6 @@
 extern crate calc;
 
 use std::env;
-use std::error::Error;
 use std::process::exit;
 
 use calc::eval;
@@ -11,7 +10,7 @@ fn main() {
     match eval(&tokens.join(" ")) {
         Ok(value) => println!("{}", value),
         Err(e) => {
-            println!("{}", e.description());
+            println!("{}", e);
             exit(1);
         }
     }

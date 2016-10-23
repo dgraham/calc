@@ -4,16 +4,23 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum ParseError {
+    UnexpectedEof,
     UnexpectedToken,
-    InvalidToken,
-    InvalidGroup,
-    FactorExpected,
+    InvalidToken(usize),
+    InvalidGroup(usize),
+    FactorExpected(usize),
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            _ => write!(f, "{}", self.description()),
+            ParseError::UnexpectedEof => write!(f, "{}", self.description()),
+            ParseError::UnexpectedToken => write!(f, "{}", self.description()),
+            ParseError::InvalidToken(pos) => write!(f, "Unrecognized token: {}", pos),
+            ParseError::InvalidGroup(pos) => write!(f, "Expected group close: {}", pos),
+            ParseError::FactorExpected(pos) => {
+                write!(f, "Expected integer, negation, or group: {}", pos)
+            }
         }
     }
 }
@@ -21,10 +28,11 @@ impl fmt::Display for ParseError {
 impl error::Error for ParseError {
     fn description(&self) -> &str {
         match *self {
+            ParseError::UnexpectedEof => "Unexpected end of file",
             ParseError::UnexpectedToken => "Unconsumed input",
-            ParseError::InvalidToken => "Unrecognized token",
-            ParseError::InvalidGroup => "Expected group close",
-            ParseError::FactorExpected => "Expected integer, negation, or group",
+            ParseError::InvalidToken(_) => "Unrecognized token",
+            ParseError::InvalidGroup(_) => "Expected group close",
+            ParseError::FactorExpected(_) => "Expected integer, negation, or group",
         }
     }
 
