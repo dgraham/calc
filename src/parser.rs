@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use error::ParseError;
-use scanner::Token;
+use scanner::{Token, TokenKind};
 use node::{BinaryOp, Constant, Node, UnaryOp};
 
 pub struct Partial<'a> {
@@ -28,22 +28,22 @@ impl Parser {
 
         match term.tokens.split_first() {
             Some((token, tokens)) => {
-                match *token {
-                    Token::Plus => {
+                match token.kind {
+                    TokenKind::Plus => {
                         let expr = try!(self.expression(tokens));
                         Ok(Partial {
                             node: Rc::new(BinaryOp::add(term.node, expr.node)),
                             tokens: expr.tokens,
                         })
                     }
-                    Token::Minus => {
+                    TokenKind::Minus => {
                         let expr = try!(self.expression(tokens));
                         Ok(Partial {
                             node: Rc::new(BinaryOp::subtract(term.node, expr.node)),
                             tokens: expr.tokens,
                         })
                     }
-                    Token::Unrecognized(_) => Err(ParseError::InvalidToken),
+                    TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken),
                     _ => Ok(term),
                 }
             }
@@ -56,22 +56,22 @@ impl Parser {
 
         match factor.tokens.split_first() {
             Some((token, tokens)) => {
-                match *token {
-                    Token::Star => {
+                match token.kind {
+                    TokenKind::Star => {
                         let term = try!(self.term(tokens));
                         Ok(Partial {
                             node: Rc::new(BinaryOp::multiply(factor.node, term.node)),
                             tokens: term.tokens,
                         })
                     }
-                    Token::Solidus => {
+                    TokenKind::Solidus => {
                         let term = try!(self.term(tokens));
                         Ok(Partial {
                             node: Rc::new(BinaryOp::divide(factor.node, term.node)),
                             tokens: term.tokens,
                         })
                     }
-                    Token::Unrecognized(_) => Err(ParseError::InvalidToken),
+                    TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken),
                     _ => Ok(factor),
                 }
             }
@@ -81,8 +81,8 @@ impl Parser {
 
     fn integer<'a>(&'a self, tokens: &'a [Token]) -> Option<Partial> {
         let digits: Vec<u64> = tokens.iter()
-            .take_while(|token| token.is_digit())
-            .map(|token| token.value())
+            .take_while(|token| token.kind.is_digit())
+            .map(|token| token.kind.value())
             .collect();
 
         let sum = digits.iter()
@@ -108,20 +108,20 @@ impl Parser {
 
         match tokens.split_first() {
             Some((token, tokens)) => {
-                match *token {
-                    Token::Minus => {
+                match token.kind {
+                    TokenKind::Minus => {
                         let factor = try!(self.factor(tokens));
                         Ok(Partial {
                             node: Rc::new(UnaryOp::negate(factor.node)),
                             tokens: factor.tokens,
                         })
                     }
-                    Token::LeftParen => {
+                    TokenKind::LeftParen => {
                         let expr = try!(self.expression(tokens));
                         match expr.tokens.split_first() {
                             Some((token, tokens)) => {
-                                match *token {
-                                    Token::RightParen => {
+                                match token.kind {
+                                    TokenKind::RightParen => {
                                         Ok(Partial {
                                             node: expr.node,
                                             tokens: tokens,
