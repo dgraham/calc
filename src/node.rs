@@ -13,7 +13,10 @@ enum Unary {
 }
 
 pub trait Node: fmt::Display {
+    fn id(&self) -> usize;
+
     fn value(&self) -> f64;
+
     fn children(&self) -> Vec<Rc<Node>>;
 }
 
@@ -25,36 +28,36 @@ pub struct BinaryOp {
 }
 
 impl BinaryOp {
-    pub fn add(lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
+    pub fn add(id: usize, lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
         BinaryOp {
-            id: 0,
+            id: id,
             op: Binary::Add,
             lhs: lhs,
             rhs: rhs,
         }
     }
 
-    pub fn subtract(lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
+    pub fn subtract(id: usize, lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
         BinaryOp {
-            id: 0,
+            id: id,
             op: Binary::Subtract,
             lhs: lhs,
             rhs: rhs,
         }
     }
 
-    pub fn multiply(lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
+    pub fn multiply(id: usize, lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
         BinaryOp {
-            id: 0,
+            id: id,
             op: Binary::Multiply,
             lhs: lhs,
             rhs: rhs,
         }
     }
 
-    pub fn divide(lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
+    pub fn divide(id: usize, lhs: Rc<Node>, rhs: Rc<Node>) -> Self {
         BinaryOp {
-            id: 0,
+            id: id,
             op: Binary::Divide,
             lhs: lhs,
             rhs: rhs,
@@ -74,6 +77,10 @@ impl fmt::Display for BinaryOp {
 }
 
 impl Node for BinaryOp {
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn value(&self) -> f64 {
         match self.op {
             Binary::Add => self.lhs.value() + self.rhs.value(),
@@ -95,9 +102,9 @@ pub struct UnaryOp {
 }
 
 impl UnaryOp {
-    pub fn negate(operand: Rc<Node>) -> Self {
+    pub fn negate(id: usize, operand: Rc<Node>) -> Self {
         UnaryOp {
-            id: 0,
+            id: id,
             op: Unary::Negate,
             operand: operand,
         }
@@ -113,6 +120,10 @@ impl fmt::Display for UnaryOp {
 }
 
 impl Node for UnaryOp {
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn value(&self) -> f64 {
         match self.op {
             Unary::Negate => -self.operand.value(),
@@ -130,9 +141,9 @@ pub struct Constant {
 }
 
 impl Constant {
-    pub fn new(value: u64) -> Self {
+    pub fn new(id: usize, value: u64) -> Self {
         Constant {
-            id: 0,
+            id: id,
             value: value,
         }
     }
@@ -145,6 +156,10 @@ impl fmt::Display for Constant {
 }
 
 impl Node for Constant {
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn value(&self) -> f64 {
         self.value as f64
     }
@@ -161,35 +176,35 @@ mod tests {
 
     #[test]
     fn it_adds() {
-        let lhs = Rc::new(Constant::new(1));
-        let rhs = Rc::new(Constant::new(2));
-        assert_eq!(3.0, BinaryOp::add(lhs, rhs).value());
+        let lhs = Rc::new(Constant::new(0, 1));
+        let rhs = Rc::new(Constant::new(0, 2));
+        assert_eq!(3.0, BinaryOp::add(0, lhs, rhs).value());
     }
 
     #[test]
     fn it_subtracts() {
-        let lhs = Rc::new(Constant::new(1));
-        let rhs = Rc::new(Constant::new(2));
-        assert_eq!(-1.0, BinaryOp::subtract(lhs, rhs).value());
+        let lhs = Rc::new(Constant::new(0, 1));
+        let rhs = Rc::new(Constant::new(0, 2));
+        assert_eq!(-1.0, BinaryOp::subtract(0, lhs, rhs).value());
     }
 
     #[test]
     fn it_multiplies() {
-        let lhs = Rc::new(Constant::new(2));
-        let rhs = Rc::new(Constant::new(3));
-        assert_eq!(6.0, BinaryOp::multiply(lhs, rhs).value());
+        let lhs = Rc::new(Constant::new(0, 2));
+        let rhs = Rc::new(Constant::new(0, 3));
+        assert_eq!(6.0, BinaryOp::multiply(0, lhs, rhs).value());
     }
 
     #[test]
     fn it_divides() {
-        let lhs = Rc::new(Constant::new(6));
-        let rhs = Rc::new(Constant::new(2));
-        assert_eq!(3.0, BinaryOp::divide(lhs, rhs).value());
+        let lhs = Rc::new(Constant::new(0, 6));
+        let rhs = Rc::new(Constant::new(0, 2));
+        assert_eq!(3.0, BinaryOp::divide(0, lhs, rhs).value());
     }
 
     #[test]
     fn it_negates() {
-        let rhs = Rc::new(Constant::new(2));
-        assert_eq!(-2.0, UnaryOp::negate(rhs).value());
+        let rhs = Rc::new(Constant::new(0, 2));
+        assert_eq!(-2.0, UnaryOp::negate(0, rhs).value());
     }
 }

@@ -32,14 +32,14 @@ impl Parser {
                     TokenKind::Plus => {
                         let expr = try!(self.expression(tokens));
                         Ok(Partial {
-                            node: Rc::new(BinaryOp::add(term.node, expr.node)),
+                            node: Rc::new(BinaryOp::add(token.position, term.node, expr.node)),
                             tokens: expr.tokens,
                         })
                     }
                     TokenKind::Minus => {
                         let expr = try!(self.expression(tokens));
                         Ok(Partial {
-                            node: Rc::new(BinaryOp::subtract(term.node, expr.node)),
+                            node: Rc::new(BinaryOp::subtract(token.position, term.node, expr.node)),
                             tokens: expr.tokens,
                         })
                     }
@@ -58,16 +58,17 @@ impl Parser {
             Some((token, tokens)) => {
                 match token.kind {
                     TokenKind::Star => {
+                        let id = token.position;
                         let term = try!(self.term(tokens));
                         Ok(Partial {
-                            node: Rc::new(BinaryOp::multiply(factor.node, term.node)),
+                            node: Rc::new(BinaryOp::multiply(id, factor.node, term.node)),
                             tokens: term.tokens,
                         })
                     }
                     TokenKind::Solidus => {
                         let term = try!(self.term(tokens));
                         Ok(Partial {
-                            node: Rc::new(BinaryOp::divide(factor.node, term.node)),
+                            node: Rc::new(BinaryOp::divide(token.position, factor.node, term.node)),
                             tokens: term.tokens,
                         })
                     }
@@ -94,7 +95,7 @@ impl Parser {
             0 => None,
             _ => {
                 Some(Partial {
-                    node: Rc::new(Constant::new(sum)),
+                    node: Rc::new(Constant::new(tokens[0].position, sum)),
                     tokens: &tokens[digits.len()..],
                 })
             }
@@ -112,7 +113,7 @@ impl Parser {
                     TokenKind::Minus => {
                         let factor = try!(self.factor(tokens));
                         Ok(Partial {
-                            node: Rc::new(UnaryOp::negate(factor.node)),
+                            node: Rc::new(UnaryOp::negate(token.position, factor.node)),
                             tokens: factor.tokens,
                         })
                     }
