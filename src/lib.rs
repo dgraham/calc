@@ -1,20 +1,29 @@
+use std::rc::Rc;
+
 use error::ParseError;
+use node::Node;
 use parser::Parser;
 use scanner::{Scanner, Token};
 
 mod error;
+mod graph;
 mod iter;
 mod parser;
 mod node;
 mod scanner;
 
 pub fn eval(text: &str) -> Result<f64, ParseError> {
+    let root = try!(parse(text));
+    Ok(root.value())
+}
+
+pub fn parse(text: &str) -> Result<Rc<Node>, ParseError> {
     let scanner = Scanner::new(text);
     let tokens: Vec<Token> = scanner.collect();
     let parser = Parser::new();
     let expr = try!(parser.expression(&tokens));
     match expr.tokens.len() {
-        0 => Ok(expr.node.value()),
+        0 => Ok(expr.node),
         _ => Err(ParseError::UnexpectedToken),
     }
 }
