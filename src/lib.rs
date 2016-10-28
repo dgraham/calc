@@ -20,8 +20,7 @@ pub fn eval(text: &str) -> Result<f64, ParseError> {
 pub fn parse(text: &str) -> Result<Rc<Node>, ParseError> {
     let scanner = Scanner::new(text);
     let tokens: Vec<Token> = scanner.collect();
-    let parser = Parser::new();
-    let expr = try!(parser.expression(&tokens));
+    let expr = try!(Parser::parse(&tokens));
     match expr.tokens.len() {
         0 => Ok(expr.node),
         _ => Err(ParseError::UnexpectedToken),

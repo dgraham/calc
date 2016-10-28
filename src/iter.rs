@@ -38,8 +38,7 @@ mod tests {
     fn it_iterates() {
         let scanner = Scanner::new("1 + (2 - 3) * 4 / 5 * 6");
         let tokens: Vec<Token> = scanner.collect();
-        let parser = Parser::new();
-        let expr = parser.expression(&tokens).unwrap();
+        let expr = Parser::parse(&tokens).unwrap();
         let iter = Iter::new(expr.node);
         let mapped: Vec<String> = iter.map(|node| node.to_string()).collect();
         assert_eq!(vec!["+", "1", "*", "-", "2", "3", "/", "4", "*", "5", "6"],
