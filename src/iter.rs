@@ -2,12 +2,12 @@ use std::rc::Rc;
 
 use node::Node;
 
-struct Iter {
+pub struct Iter {
     stack: Vec<Rc<Node>>,
 }
 
 impl Iter {
-    fn new(root: Rc<Node>) -> Self {
+    pub fn new(root: Rc<Node>) -> Self {
         Iter { stack: vec![root] }
     }
 }
