@@ -10,6 +10,8 @@ grammar in [Jamis Buck][jamis]'s [parser challenge][challenge].
 
 ```
 $ calc 1 + 2
+
+$ calc --dot 1 + 2 | dot -Tsvg > tree.svg
 ```
 
 ## Development

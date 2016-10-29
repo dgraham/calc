@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use error::ParseError;
+use graph::Graph;
 use node::Node;
 use parser::Parser;
 use scanner::{Scanner, Token};
@@ -25,6 +26,10 @@ pub fn parse(text: &str) -> Result<Rc<Node>, ParseError> {
         0 => Ok(expr.node),
         _ => Err(ParseError::UnexpectedToken),
     }
+}
+
+pub fn dot(node: Rc<Node>) -> String {
+    Graph::dot(node)
 }
 
 #[cfg(test)]

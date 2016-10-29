@@ -7,3 +7,4 @@ repository = "https://github.com/dgraham/calc"
 license = "MIT"
 
 [dependencies]
+getopts = "~0.2"
