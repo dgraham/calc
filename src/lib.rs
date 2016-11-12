@@ -14,14 +14,13 @@ mod node;
 mod scanner;
 
 pub fn eval(text: &str) -> Result<f64, ParseError> {
-    let root = try!(parse(text));
-    Ok(root.value())
+    Ok(parse(text)?.value())
 }
 
 pub fn parse(text: &str) -> Result<Rc<Node>, ParseError> {
     let scanner = Scanner::new(text);
     let tokens: Vec<Token> = scanner.collect();
-    let expr = try!(Parser::parse(&tokens));
+    let expr = Parser::parse(&tokens)?;
     match expr.tokens.len() {
         0 => Ok(expr.node),
         _ => Err(ParseError::UnexpectedToken),

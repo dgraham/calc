@@ -18,15 +18,15 @@ impl Graph {
         let mut buffer = String::new();
 
         // Add node statement.
-        try!(write!(buffer, "  {} [ label = \"{}\" ]", node.id(), node));
+        write!(buffer, "  {} [ label = \"{}\" ]", node.id(), node)?;
 
         // Add edge statements.
         if !node.children().is_empty() {
-            try!(write!(buffer, "\n  {} -- {{", node.id()));
+            write!(buffer, "\n  {} -- {{", node.id())?;
             for child in node.children() {
-                try!(write!(buffer, " {}", child.id()));
+                write!(buffer, " {}", child.id())?;
             }
-            try!(write!(buffer, " }}"));
+            write!(buffer, " }}")?;
         }
 
         Ok(buffer)

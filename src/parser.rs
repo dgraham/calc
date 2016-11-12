@@ -18,20 +18,20 @@ impl Parser {
 }
 
 fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
-    let term = try!(term(tokens));
+    let term = term(tokens)?;
 
     match term.tokens.split_first() {
         Some((token, tokens)) => {
             match token.kind {
                 TokenKind::Plus => {
-                    let expr = try!(expression(tokens));
+                    let expr = expression(tokens)?;
                     Ok(Partial {
                         node: Rc::new(BinaryOp::add(token.position, term.node, expr.node)),
                         tokens: expr.tokens,
                     })
                 }
                 TokenKind::Minus => {
-                    let expr = try!(expression(tokens));
+                    let expr = expression(tokens)?;
                     Ok(Partial {
                         node: Rc::new(BinaryOp::subtract(token.position, term.node, expr.node)),
                         tokens: expr.tokens,
@@ -46,21 +46,21 @@ fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
 }
 
 fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
-    let factor = try!(factor(tokens));
+    let factor = factor(tokens)?;
 
     match factor.tokens.split_first() {
         Some((token, tokens)) => {
             match token.kind {
                 TokenKind::Star => {
                     let id = token.position;
-                    let term = try!(term(tokens));
+                    let term = term(tokens)?;
                     Ok(Partial {
                         node: Rc::new(BinaryOp::multiply(id, factor.node, term.node)),
                         tokens: term.tokens,
                     })
                 }
                 TokenKind::Solidus => {
-                    let term = try!(term(tokens));
+                    let term = term(tokens)?;
                     Ok(Partial {
                         node: Rc::new(BinaryOp::divide(token.position, factor.node, term.node)),
                         tokens: term.tokens,
@@ -105,14 +105,14 @@ fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
         Some((token, tokens)) => {
             match token.kind {
                 TokenKind::Minus => {
-                    let factor = try!(factor(tokens));
+                    let factor = factor(tokens)?;
                     Ok(Partial {
                         node: Rc::new(UnaryOp::negate(token.position, factor.node)),
                         tokens: factor.tokens,
                     })
                 }
                 TokenKind::LeftParen => {
-                    let expr = try!(expression(tokens));
+                    let expr = expression(tokens)?;
                     match expr.tokens.split_first() {
                         Some((token, tokens)) => {
                             match token.kind {
