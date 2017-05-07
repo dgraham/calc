@@ -96,7 +96,9 @@ mod tests {
         let tokens: Vec<Token> = scanner.collect();
         let kinds: Vec<&TokenKind> = tokens.iter().map(|token| &token.kind).collect();
         assert_eq!(3, tokens.len());
-        assert_eq!(vec![&TokenKind::Digit(1), &TokenKind::Unrecognized('a'), &TokenKind::Digit(2)],
+        assert_eq!(vec![&TokenKind::Digit(1),
+                        &TokenKind::Unrecognized('a'),
+                        &TokenKind::Digit(2)],
                    kinds);
     }
 
