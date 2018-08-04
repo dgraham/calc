@@ -35,9 +35,9 @@ impl Graph {
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
     use super::Graph;
     use node::{BinaryOp, Constant};
+    use std::rc::Rc;
 
     #[test]
     fn it_converts_to_dot_syntax() {
@@ -45,8 +45,10 @@ mod tests {
         let rhs = Rc::new(Constant::new(2, 2));
         let op = BinaryOp::add(0, lhs, rhs);
         let dot = Graph::dot(Rc::new(op));
-        assert_eq!("strict graph {\n  0 [ label = \"+\" ]\n  0 -- { 1 2 }\n  1 [ label = \"1\" \
-                    ]\n  2 [ label = \"2\" ]\n}",
-                   dot);
+        assert_eq!(
+            "strict graph {\n  0 [ label = \"+\" ]\n  0 -- { 1 2 }\n  1 [ label = \"1\" \
+             ]\n  2 [ label = \"2\" ]\n}",
+            dot
+        );
     }
 }

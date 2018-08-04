@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use error::ParseError;
-use scanner::{Token, TokenKind};
 use node::{BinaryOp, Constant, Node, UnaryOp};
+use scanner::{Token, TokenKind};
 
 pub struct Partial<'a> {
     pub node: Rc<Node>,
@@ -21,26 +21,24 @@ fn expression(tokens: &[Token]) -> Result<Partial, ParseError> {
     let term = term(tokens)?;
 
     match term.tokens.split_first() {
-        Some((token, tokens)) => {
-            match token.kind {
-                TokenKind::Plus => {
-                    let expr = expression(tokens)?;
-                    Ok(Partial {
-                           node: Rc::new(BinaryOp::add(token.position, term.node, expr.node)),
-                           tokens: expr.tokens,
-                       })
-                }
-                TokenKind::Minus => {
-                    let expr = expression(tokens)?;
-                    Ok(Partial {
-                           node: Rc::new(BinaryOp::subtract(token.position, term.node, expr.node)),
-                           tokens: expr.tokens,
-                       })
-                }
-                TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken(token.position)),
-                _ => Ok(term),
+        Some((token, tokens)) => match token.kind {
+            TokenKind::Plus => {
+                let expr = expression(tokens)?;
+                Ok(Partial {
+                    node: Rc::new(BinaryOp::add(token.position, term.node, expr.node)),
+                    tokens: expr.tokens,
+                })
             }
-        }
+            TokenKind::Minus => {
+                let expr = expression(tokens)?;
+                Ok(Partial {
+                    node: Rc::new(BinaryOp::subtract(token.position, term.node, expr.node)),
+                    tokens: expr.tokens,
+                })
+            }
+            TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken(token.position)),
+            _ => Ok(term),
+        },
         None => Ok(term),
     }
 }
@@ -49,27 +47,25 @@ fn term(tokens: &[Token]) -> Result<Partial, ParseError> {
     let factor = factor(tokens)?;
 
     match factor.tokens.split_first() {
-        Some((token, tokens)) => {
-            match token.kind {
-                TokenKind::Star => {
-                    let id = token.position;
-                    let term = term(tokens)?;
-                    Ok(Partial {
-                           node: Rc::new(BinaryOp::multiply(id, factor.node, term.node)),
-                           tokens: term.tokens,
-                       })
-                }
-                TokenKind::Solidus => {
-                    let term = term(tokens)?;
-                    Ok(Partial {
-                           node: Rc::new(BinaryOp::divide(token.position, factor.node, term.node)),
-                           tokens: term.tokens,
-                       })
-                }
-                TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken(token.position)),
-                _ => Ok(factor),
+        Some((token, tokens)) => match token.kind {
+            TokenKind::Star => {
+                let id = token.position;
+                let term = term(tokens)?;
+                Ok(Partial {
+                    node: Rc::new(BinaryOp::multiply(id, factor.node, term.node)),
+                    tokens: term.tokens,
+                })
             }
-        }
+            TokenKind::Solidus => {
+                let term = term(tokens)?;
+                Ok(Partial {
+                    node: Rc::new(BinaryOp::divide(token.position, factor.node, term.node)),
+                    tokens: term.tokens,
+                })
+            }
+            TokenKind::Unrecognized(_) => Err(ParseError::InvalidToken(token.position)),
+            _ => Ok(factor),
+        },
         None => Ok(factor),
     }
 }
@@ -89,12 +85,10 @@ fn integer(tokens: &[Token]) -> Option<Partial> {
 
     match digits.len() {
         0 => None,
-        _ => {
-            Some(Partial {
-                     node: Rc::new(Constant::new(tokens[0].position, sum)),
-                     tokens: &tokens[digits.len()..],
-                 })
-        }
+        _ => Some(Partial {
+            node: Rc::new(Constant::new(tokens[0].position, sum)),
+            tokens: &tokens[digits.len()..],
+        }),
     }
 }
 
@@ -104,35 +98,29 @@ fn factor(tokens: &[Token]) -> Result<Partial, ParseError> {
     }
 
     match tokens.split_first() {
-        Some((token, tokens)) => {
-            match token.kind {
-                TokenKind::Minus => {
-                    let factor = factor(tokens)?;
-                    Ok(Partial {
-                           node: Rc::new(UnaryOp::negate(token.position, factor.node)),
-                           tokens: factor.tokens,
-                       })
-                }
-                TokenKind::LeftParen => {
-                    let expr = expression(tokens)?;
-                    match expr.tokens.split_first() {
-                        Some((token, tokens)) => {
-                            match token.kind {
-                                TokenKind::RightParen => {
-                                    Ok(Partial {
-                                           node: expr.node,
-                                           tokens: tokens,
-                                       })
-                                }
-                                _ => Err(ParseError::InvalidGroup(token.position)),
-                            }
-                        }
-                        None => Err(ParseError::UnexpectedEof),
-                    }
-                }
-                _ => Err(ParseError::FactorExpected(token.position)),
+        Some((token, tokens)) => match token.kind {
+            TokenKind::Minus => {
+                let factor = factor(tokens)?;
+                Ok(Partial {
+                    node: Rc::new(UnaryOp::negate(token.position, factor.node)),
+                    tokens: factor.tokens,
+                })
             }
-        }
+            TokenKind::LeftParen => {
+                let expr = expression(tokens)?;
+                match expr.tokens.split_first() {
+                    Some((token, tokens)) => match token.kind {
+                        TokenKind::RightParen => Ok(Partial {
+                            node: expr.node,
+                            tokens: tokens,
+                        }),
+                        _ => Err(ParseError::InvalidGroup(token.position)),
+                    },
+                    None => Err(ParseError::UnexpectedEof),
+                }
+            }
+            _ => Err(ParseError::FactorExpected(token.position)),
+        },
         None => Err(ParseError::UnexpectedEof),
     }
 }

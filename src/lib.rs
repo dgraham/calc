@@ -9,8 +9,8 @@ use scanner::{Scanner, Token};
 mod error;
 mod graph;
 mod iter;
-mod parser;
 mod node;
+mod parser;
 mod scanner;
 
 pub fn eval(text: &str) -> Result<f64, ParseError> {

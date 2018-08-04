@@ -49,7 +49,9 @@ pub struct Scanner<'a> {
 
 impl<'a> Scanner<'a> {
     pub fn new(text: &'a str) -> Self {
-        Scanner { chars: text.chars().enumerate() }
+        Scanner {
+            chars: text.chars().enumerate(),
+        }
     }
 }
 
@@ -58,19 +60,17 @@ impl<'a> Iterator for Scanner<'a> {
 
     fn next(&mut self) -> Option<Token> {
         match self.chars.next() {
-            Some((ix, ch)) => {
-                match ch {
-                    '0'...'9' => Some(Token::new(TokenKind::Digit(ch.to_digit(10).unwrap()), ix)),
-                    '+' => Some(Token::new(TokenKind::Plus, ix)),
-                    '-' => Some(Token::new(TokenKind::Minus, ix)),
-                    '*' => Some(Token::new(TokenKind::Star, ix)),
-                    '/' => Some(Token::new(TokenKind::Solidus, ix)),
-                    '(' => Some(Token::new(TokenKind::LeftParen, ix)),
-                    ')' => Some(Token::new(TokenKind::RightParen, ix)),
-                    ' ' | '\n' | '\t' => self.next(),
-                    _ => Some(Token::new(TokenKind::Unrecognized(ch), ix)),
-                }
-            }
+            Some((ix, ch)) => match ch {
+                '0'...'9' => Some(Token::new(TokenKind::Digit(ch.to_digit(10).unwrap()), ix)),
+                '+' => Some(Token::new(TokenKind::Plus, ix)),
+                '-' => Some(Token::new(TokenKind::Minus, ix)),
+                '*' => Some(Token::new(TokenKind::Star, ix)),
+                '/' => Some(Token::new(TokenKind::Solidus, ix)),
+                '(' => Some(Token::new(TokenKind::LeftParen, ix)),
+                ')' => Some(Token::new(TokenKind::RightParen, ix)),
+                ' ' | '\n' | '\t' => self.next(),
+                _ => Some(Token::new(TokenKind::Unrecognized(ch), ix)),
+            },
             None => None,
         }
     }
@@ -86,8 +86,10 @@ mod tests {
         let tokens: Vec<Token> = scanner.collect();
         let kinds: Vec<&TokenKind> = tokens.iter().map(|token| &token.kind).collect();
         assert_eq!(3, tokens.len());
-        assert_eq!(vec![&TokenKind::Digit(1), &TokenKind::Plus, &TokenKind::Digit(2)],
-                   kinds);
+        assert_eq!(
+            vec![&TokenKind::Digit(1), &TokenKind::Plus, &TokenKind::Digit(2)],
+            kinds
+        );
     }
 
     #[test]
@@ -96,10 +98,14 @@ mod tests {
         let tokens: Vec<Token> = scanner.collect();
         let kinds: Vec<&TokenKind> = tokens.iter().map(|token| &token.kind).collect();
         assert_eq!(3, tokens.len());
-        assert_eq!(vec![&TokenKind::Digit(1),
-                        &TokenKind::Unrecognized('a'),
-                        &TokenKind::Digit(2)],
-                   kinds);
+        assert_eq!(
+            vec![
+                &TokenKind::Digit(1),
+                &TokenKind::Unrecognized('a'),
+                &TokenKind::Digit(2),
+            ],
+            kinds
+        );
     }
 
     #[test]
@@ -108,7 +114,9 @@ mod tests {
         let tokens: Vec<Token> = scanner.collect();
         let kinds: Vec<&TokenKind> = tokens.iter().map(|token| &token.kind).collect();
         assert_eq!(3, tokens.len());
-        assert_eq!(vec![&TokenKind::Digit(1), &TokenKind::Plus, &TokenKind::Digit(2)],
-                   kinds);
+        assert_eq!(
+            vec![&TokenKind::Digit(1), &TokenKind::Plus, &TokenKind::Digit(2)],
+            kinds
+        );
     }
 }

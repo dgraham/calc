@@ -41,7 +41,9 @@ mod tests {
         let expr = Parser::parse(&tokens).unwrap();
         let iter = Iter::new(expr.node);
         let mapped: Vec<String> = iter.map(|node| node.to_string()).collect();
-        assert_eq!(vec!["+", "1", "*", "-", "2", "3", "/", "4", "*", "5", "6"],
-                   mapped);
+        assert_eq!(
+            vec!["+", "1", "*", "-", "2", "3", "/", "4", "*", "5", "6"],
+            mapped
+        );
     }
 }

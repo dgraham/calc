@@ -171,8 +171,8 @@ impl Node for Constant {
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
     use super::{BinaryOp, Constant, Node, UnaryOp};
+    use std::rc::Rc;
 
     #[test]
     fn it_adds() {
